@@ -28,6 +28,9 @@ class CPDataset(data.Dataset):
         self.transform = transforms.Compose([  \
                 transforms.ToTensor(),   \
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        self.shape_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.5), (0.5))])
         
         # load data list
         im_names = []
@@ -83,7 +86,8 @@ class CPDataset(data.Dataset):
         parse_shape = Image.fromarray((parse_shape*255).astype(np.uint8))
         parse_shape = parse_shape.resize((self.fine_width//16, self.fine_height//16), Image.BILINEAR)
         parse_shape = parse_shape.resize((self.fine_width, self.fine_height), Image.BILINEAR)
-        shape = self.transform(parse_shape) # [-1,1]
+        #shape = self.transform(parse_shape) # [-1,1]
+        shape = self.shape_transform(parse_shape)
         phead = torch.from_numpy(parse_head) # [0,1]
         pcm = torch.from_numpy(parse_cloth) # [0,1]
 
@@ -112,14 +116,24 @@ class CPDataset(data.Dataset):
             if pointx > 1 and pointy > 1:
                 draw.rectangle((pointx-r, pointy-r, pointx+r, pointy+r), 'white', 'white')
                 pose_draw.rectangle((pointx-r, pointy-r, pointx+r, pointy+r), 'white', 'white')
+            # -----resize one_map-----
+            one_map = np.reshape(np.array(one_map), (self.fine_height, self.fine_width, -1))
+            one_map = np.broadcast_to(one_map, (self.fine_height, self.fine_width, 3))
+            one_map = Image.fromarray(one_map)
+            # ------------------------
             one_map = self.transform(one_map)
             pose_map[i] = one_map[0]
 
+        # -----resize im_pose-----
+        im_pose = np.reshape(np.array(im_pose), (self.fine_height, self.fine_width, -1))
+        im_pose = np.broadcast_to(im_pose, (self.fine_height, self.fine_width, 3))
+        im_pose = Image.fromarray(im_pose)
+        # ------------------------
         # just for visualization
         im_pose = self.transform(im_pose)
         
         # cloth-agnostic representation
-        agnostic = torch.cat([shape, im_h, pose_map], 0) 
+        agnostic = torch.cat([shape, im_h, pose_map], 0)
 
         if self.stage == 'GMM':
             im_g = Image.open('grid.png')
