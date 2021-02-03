@@ -53,8 +53,8 @@ def train_gmm(opt, train_loader, model, board):
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda = lambda step: 1.0 -
             max(0, step - opt.keep_step) / float(opt.decay_step + 1))
     
+    step_start_time, step_end_time = time.time(), time.time()
     for step in range(opt.keep_step + opt.decay_step):
-        iter_start_time = time.time()
         inputs = train_loader.next_batch()
             
         im = inputs['image'].cuda()
@@ -84,8 +84,10 @@ def train_gmm(opt, train_loader, model, board):
         if (step+1) % opt.display_count == 0:
             board_add_images(board, 'combine', visuals, step+1)
             board.add_scalar('metric', loss.item(), step+1)
-            t = time.time() - iter_start_time
+            step_end_time = time.time()
+            t = step_end_time - step_start_time
             print('step: %8d, time: %.3f, loss: %4f' % (step+1, t, loss.item()), flush=True)
+            step_start_time = step_end_time
 
         if (step+1) % opt.save_count == 0:
             save_checkpoint(model, os.path.join(opt.checkpoint_dir, opt.name, 'step_%06d.pth' % (step+1)))
