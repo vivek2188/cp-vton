@@ -30,7 +30,7 @@ class CPDataset(data.Dataset):
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
         self.shape_transform = transforms.Compose([
                 transforms.ToTensor(),
-                transforms.Normalize((0.5), (0.5))])
+                transforms.Normalize((0.5,), (0.5,))])
         
         # load data list
         im_names = []
